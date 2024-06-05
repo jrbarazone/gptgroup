@@ -35,7 +35,9 @@ class ActionHistoryComponent(MessageProvider, AfterParse[AnyProposal], AfterExec
             self.max_tokens,
             self.count_tokens,
         ):
-            yield ChatMessage.system(f"## Progress on your Task so far\n\n{progress}")
+            yield ChatMessage.system(
+                f"## Progress on your Task so far\nThis is the list of the steps that you have executed previously, use this as your consideration on considering the next action!\n{progress}"
+            )
 
     def after_parse(self, result: AnyProposal) -> None:
         self.event_history.register_action(result)

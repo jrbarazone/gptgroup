@@ -1,3 +1,4 @@
+import inspect
 import logging
 from typing import (
     Any,
@@ -208,6 +209,8 @@ class BaseOpenAIChatProvider(
             if not parse_errors:
                 try:
                     parsed_result = completion_parser(assistant_msg)
+                    if inspect.isawaitable(parsed_result):
+                        parsed_result = await parsed_result
                 except Exception as e:
                     parse_errors.append(e)
 

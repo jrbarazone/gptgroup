@@ -134,6 +134,8 @@ class CompletionModelFunction(BaseModel):
     name: str
     description: str
     parameters: dict[str, "JSONSchema"]
+    return_type: str | None = None
+    is_async: bool = False
 
     def fmt_line(self) -> str:
         params = ", ".join(
@@ -141,6 +143,40 @@ class CompletionModelFunction(BaseModel):
             for name, p in self.parameters.items()
         )
         return f"{self.name}: {self.description}. Params: ({params})"
+
+    def fmt_header(self, impl="pass", force_async=False) -> str:
+        """
+        Formats and returns the function header as a string with types and descriptions.
+
+        Returns:
+            str: The formatted function header.
+        """
+        def indent(content: str, spaces: int = 4):
+            return " " * spaces + content.replace("\n", "\n" + " " * spaces)
+
+        params = ", ".join(
+            f"{name}: {p.python_type}{f'= {str(p.default)}' if p.default else ' = None' if not p.required else ''}"
+            for name, p in self.parameters.items()
+        )
+        func = "async def" if self.is_async or force_async else "def"
+        return_str = f" -> {self.return_type}" if self.return_type else ""
+        return f"{func} {self.name}({params}){return_str}:\n" + indent(
+            (
+                '"""\n'
+                f"{self.description}\n\n"
+                "Params:\n"
+                + indent(
+                    "\n".join(
+                        f"{name}: {param.description}"
+                        for name, param in self.parameters.items()
+                        if param.description
+                    )
+                )
+                + "\n"
+                '"""\n'
+                f"{impl}"
+            ),
+        )
 
     def validate_call(
         self, function_call: AssistantFunctionCall

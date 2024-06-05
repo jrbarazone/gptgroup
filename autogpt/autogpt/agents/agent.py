@@ -20,6 +20,9 @@ from forge.components.action_history import (
     EpisodicActionHistory,
 )
 from forge.components.code_executor.code_executor import CodeExecutorComponent
+from forge.components.code_flow_executor.code_flow_executor import (
+    CodeFlowExecutionComponent,
+)
 from forge.components.context.context import AgentContext, ContextComponent
 from forge.components.file_manager import FileManagerComponent
 from forge.components.git_operations import GitOperationsComponent
@@ -29,6 +32,7 @@ from forge.components.user_interaction import UserInteractionComponent
 from forge.components.watchdog import WatchdogComponent
 from forge.components.web import WebSearchComponent, WebSeleniumComponent
 from forge.file_storage.base import FileStorage
+from forge.llm.prompting import PromptStrategy
 from forge.llm.prompting.schema import ChatPrompt
 from forge.llm.prompting.utils import dump_prompt
 from forge.llm.providers import (
@@ -60,10 +64,8 @@ from autogpt.app.log_cycle import (
     LogCycleHandler,
 )
 
-from .prompt_strategies.one_shot import (
-    OneShotAgentActionProposal,
-    OneShotAgentPromptStrategy,
-)
+from .prompt_strategies.code_flow import CodeFlowAgentPromptStrategy
+from .prompt_strategies.one_shot import OneShotAgentActionProposal
 
 if TYPE_CHECKING:
     from forge.config.config import Config
@@ -100,17 +102,18 @@ class Agent(BaseAgent[OneShotAgentActionProposal], Configurable[AgentSettings]):
         llm_provider: MultiProvider,
         file_storage: FileStorage,
         legacy_config: Config,
+        prompt_strategy_class: type[PromptStrategy] = CodeFlowAgentPromptStrategy,
     ):
         super().__init__(settings)
 
         self.llm_provider = llm_provider
-        prompt_config = OneShotAgentPromptStrategy.default_configuration.copy(deep=True)
+        prompt_config = prompt_strategy_class.default_configuration.copy(deep=True)
         prompt_config.use_functions_api = (
             settings.config.use_functions_api
             # Anthropic currently doesn't support tools + prefilling :(
             and self.llm.provider_name != "anthropic"
         )
-        self.prompt_strategy = OneShotAgentPromptStrategy(prompt_config, logger)
+        self.prompt_strategy = prompt_strategy_class(prompt_config, logger)
         self.commands: list[Command] = []
 
         # Components
@@ -139,6 +142,7 @@ class Agent(BaseAgent[OneShotAgentActionProposal], Configurable[AgentSettings]):
         self.watchdog = WatchdogComponent(settings.config, settings.history).run_after(
             ContextComponent
         )
+        self.code_flow_executor = CodeFlowExecutionComponent()
 
         self.created_at = datetime.now().strftime("%Y%m%d_%H%M%S")
         """Timestamp the agent was created; only used for structured debug logging."""
@@ -170,6 +174,7 @@ class Agent(BaseAgent[OneShotAgentActionProposal], Configurable[AgentSettings]):
         # Get commands
         self.commands = await self.run_pipeline(CommandProvider.get_commands)
         self._remove_disabled_commands()
+        self.code_flow_executor.set_available_functions(self.commands)
 
         # Get messages
         messages = await self.run_pipeline(MessageProvider.get_messages)
@@ -237,6 +242,7 @@ class Agent(BaseAgent[OneShotAgentActionProposal], Configurable[AgentSettings]):
         # Get commands
         self.commands = await self.run_pipeline(CommandProvider.get_commands)
         self._remove_disabled_commands()
+        self.code_flow_executor.set_available_functions(self.commands)
 
         try:
             return_value = await self._execute_tool(tool)
