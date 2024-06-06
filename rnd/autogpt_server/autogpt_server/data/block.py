@@ -1,10 +1,10 @@
 import inspect
 import json
-
 from abc import ABC, abstractmethod
+from typing import ClassVar
+
 from prisma.models import AgentBlock
 from pydantic import BaseModel
-from typing import ClassVar
 
 
 class Block(ABC, BaseModel):
