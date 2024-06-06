@@ -1,6 +1,6 @@
 # 🧩 Components
 
-Components are the building blocks of [🤖 Agents](./agents.md). They are classes inheriting `AgentComponent` or implementing one or more [⚙️ Protocols](./protocols.md) that give agent additional abilities or processing. 
+Components are the building blocks of [🤖 Agents](../../../autogpt/autogpt/agents/README.md). They are classes inheriting `AgentComponent` or implementing one or more [⚙️ Protocols](../../../docs/content/forge/components/protocols.md) that give agent additional abilities or processing. 
 
 Components can be used to implement various functionalities like providing messages to the prompt, executing code, or interacting with external services.
 They can be enabled or disabled, ordered, and can rely on each other.
@@ -9,7 +9,7 @@ Components assigned in the agent's `__init__` via `self` are automatically detec
 For example inside `__init__`: `self.my_component = MyComponent()`.
 You can use any valid Python variable name, what matters for the component to be detected is its type (`AgentComponent` or any protocol inheriting from it).
 
-Visit [Built-in Components](./built-in-components.md) to see what components are available out of the box.
+Visit [Built-in Components](../../../docs/content/forge/components/built-in-components.md) to see what components are available out of the box.
 
 ```py
 from forge.agent import BaseAgent
