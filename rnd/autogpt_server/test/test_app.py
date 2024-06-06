@@ -1,7 +1,8 @@
 import pytest
 
 from autogpt_server.data import block, db, graph
-from autogpt_server.data.execution import Execution, ExecutionQueue, add_execution
+from autogpt_server.data.execution import (Execution, ExecutionQueue,
+                                           add_execution)
 from autogpt_server.executor import executor
 from autogpt_server.server import server
 
