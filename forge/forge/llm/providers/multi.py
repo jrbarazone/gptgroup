@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 from .anthropic import ANTHROPIC_CHAT_MODELS, AnthropicModelName, AnthropicProvider
 from .groq import GROQ_CHAT_MODELS, GroqModelName, GroqProvider
+from .llamafile import LLAMAFILE_CHAT_MODELS, LlamafileModelName, LlamafileProvider
 from .openai import OPEN_AI_CHAT_MODELS, OpenAIModelName, OpenAIProvider
 from .schema import (
     AssistantChatMessage,
@@ -24,10 +25,15 @@ from .schema import (
 
 _T = TypeVar("_T")
 
-ModelName = AnthropicModelName | GroqModelName | OpenAIModelName
+ModelName = AnthropicModelName | GroqModelName | LlamafileModelName | OpenAIModelName
 EmbeddingModelProvider = OpenAIProvider
 
-CHAT_MODELS = {**ANTHROPIC_CHAT_MODELS, **GROQ_CHAT_MODELS, **OPEN_AI_CHAT_MODELS}
+CHAT_MODELS = {
+    **ANTHROPIC_CHAT_MODELS,
+    **GROQ_CHAT_MODELS,
+    **LLAMAFILE_CHAT_MODELS,
+    **OPEN_AI_CHAT_MODELS,
+}
 
 
 class MultiProvider(BaseChatModelProvider[ModelName, ModelProviderSettings]):
@@ -153,6 +159,7 @@ class MultiProvider(BaseChatModelProvider[ModelName, ModelProviderSettings]):
             return {
                 ModelProviderName.ANTHROPIC: AnthropicProvider,
                 ModelProviderName.GROQ: GroqProvider,
+                ModelProviderName.LLAMAFILE: LlamafileProvider,
                 ModelProviderName.OPENAI: OpenAIProvider,
             }[provider_name]
         except KeyError:
@@ -162,4 +169,10 @@ class MultiProvider(BaseChatModelProvider[ModelName, ModelProviderSettings]):
         return f"{self.__class__.__name__}()"
 
 
-ChatModelProvider = AnthropicProvider | GroqProvider | OpenAIProvider | MultiProvider
+ChatModelProvider = (
+    AnthropicProvider
+    | GroqProvider
+    | LlamafileProvider
+    | OpenAIProvider
+    | MultiProvider
+)
